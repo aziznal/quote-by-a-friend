@@ -1,25 +1,64 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  trackGithubClicked,
+  trackLocaleChanged,
+  trackShareEvent,
+} from "@/lib/analytics/events";
+import { Locale, useLocaleStore } from "@/lib/locale";
+import { GithubIcon } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
-  // TODO: use zustand with persistent storage?
-  const [locale, setLocale] = useState<"en" | "tr" | "de">("en");
+  const { locale, setLocale } = useLocaleStore();
+  const { toast } = useToast();
 
-  const daysUntil9thNovember2023 = Math.ceil(
-    (new Date("2023-11-09T00:00:00.000Z").getTime() - Date.now()) /
-      (1000 * 60 * 60 * 24)
-  );
+  const onShareClicked = () => {
+    copySitelinkToClipboard();
+    trackShareEvent();
+  };
 
-  const daysUntil9thDecember2023 = Math.ceil(
-    (new Date("2023-12-09T00:00:00.000Z").getTime() - Date.now()) /
-      (1000 * 60 * 60 * 24)
-  );
+  const copySitelinkToClipboard = () => {
+    const el = document.createElement("textarea");
+    el.value = "quote-by-a-friend.aziznal.com";
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+
+    if (locale === "en")
+      toast({
+        title: "Site address copied to clipboard!",
+        variant: "success",
+      });
+
+    if (locale === "tr")
+      toast({
+        title: "Site adresi panoya kopyalandı!",
+        variant: "success",
+      });
+
+    if (locale === "de")
+      toast({
+        title: "Website-Adresse in die Zwischenablage kopiert!",
+        variant: "success",
+      });
+  };
+
+  const onChangeLocaleClicked = (newLocale: Locale) => {
+    setLocale(newLocale);
+
+    trackLocaleChanged({
+      from: locale,
+      to: newLocale,
+    });
+  };
 
   return (
     <main
-      className="flex flex-col justify-center items-center h-[100vh] text-white"
+      className="flex flex-col justify-center items-center min-h-[100vh] text-white py-24 px-12"
       style={{
         background:
           "linear-gradient(45deg, rgba(66,0,0,1) 0%, rgba(18,0,38,1) 57%, rgba(89,0,157,1) 100%)",
@@ -28,54 +67,55 @@ export default function Home() {
       <div className="flex gap-3">
         <Button
           variant={locale === "en" ? "secondary" : "default"}
-          onClick={() => setLocale("en")}
+          onClick={() => onChangeLocaleClicked(Locale.EN)}
         >
           EN 🌎{" "}
         </Button>
 
         <Button
           variant={locale === "tr" ? "secondary" : "default"}
-          onClick={() => setLocale("tr")}
+          onClick={() => onChangeLocaleClicked(Locale.TR)}
         >
           TR 🇹🇷
         </Button>
 
         <Button
           variant={locale === "de" ? "secondary" : "default"}
-          onClick={() => setLocale("de")}
+          onClick={() => onChangeLocaleClicked(Locale.DE)}
         >
           DE 🇩🇪{" "}
         </Button>
       </div>
 
       <div className="text-center font-bold mt-12">
-        <h1 className="text-7xl">
-          {locale === "en" && "When am I going to my Military Service?"}
-          {locale === "tr" && "Askeriyeye ne zaman gidiyorum?"}
-          {locale === "de" && "Wann gehe ich zum Militärdienst?"}
-        </h1>
-
-        <h2 className="text-5xl mt-12 rainbow-text">
+        <h1 className="text-4xl lg:text-7xl rainbow-text">
           {locale === "en" &&
-            `9th November 2023 (${daysUntil9thNovember2023} days)`}
-          {locale === "tr" && `9. Kasım 2023 (${daysUntil9thNovember2023} gün)`}
-          {locale === "de" && `9. November 2023 (${daysUntil9thNovember2023} Tage)`}
-        </h2>
-      </div>
-
-      <div className="text-center font-bold mt-24">
-        <h1 className="text-7xl">
-          {locale === "en" && "When am I coming back?"}
-          {locale === "tr" && "Ne zaman geri geliyorum?"}
-          {locale === "de" && "Wann komme ich zurück?"}
+            "Don't deliver half-assed work that's not enough to continue nor useful to start over."}
+          {locale === "tr" &&
+            "Hiçbir şey vermemekle bir şey vermek arasında en iğrenç noktada iş teslim etme."}
+          {locale === "de" &&
+            "Mein Deutsch ist noch nicht genug um den Satz ueberzusetzen"}
         </h1>
-
-        <h2 className="text-5xl mt-12 rainbow-text">
-          {locale === "en" && `9th December 2023 (${daysUntil9thDecember2023} days)`}
-          {locale === "tr" && `9. Aralık 2023 (${daysUntil9thDecember2023} gün)`}
-          {locale === "de" && `9. Dezember 2023 (${daysUntil9thDecember2023} Tage)`}
-        </h2>
       </div>
+
+      <div
+        className="mt-24 font-bold cursor-pointer active:text-blue-700 hover:text-blue-700 transition-all"
+        onClick={onShareClicked}
+      >
+        {locale === "en" && <>Share the wisdom </>}
+        {locale === "tr" && <>Hikmeti paylaş </>}
+        {locale === "de" && <> Mittelien </>}
+      </div>
+
+      <Link
+        className="mt-12 flex gap-2 items-center hover:text-blue-700 transition-all"
+        href="https://github.com/aziznal/quote-by-a-friend"
+        target="_blank"
+        onClick={() => trackGithubClicked()}
+      >
+        <GithubIcon size={24} />
+        <span className="text-sm font-bold">@aziznal</span>
+      </Link>
     </main>
   );
 }
